@@ -2,7 +2,7 @@ from sqlalchemy.engine import ResultProxy, Connection
 from sqlalchemy.exc import OperationalError
 from CalendarDataClass import CalendarData
 from googleapiclient.discovery import build
-from dba import update_calendarId, delete_from_fct_by_calendarId
+from dba import update_calendarId
 from loguru import logger
 from schema import fct_calendar_data
 

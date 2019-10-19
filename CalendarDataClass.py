@@ -1,9 +1,7 @@
-from pandas import DataFrame, read_csv, isna
+from pandas import DataFrame, read_csv
 from datetime import datetime
-from warnings import warn
-from schema import fct_calendar_data, stg_calendar_data
-from pandas import to_datetime
-from config import config
+from schema import stg_calendar_data
+
 
 default_time = datetime.strptime("00:00", '%H:%M').time()
 
