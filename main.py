@@ -1,18 +1,11 @@
-from __future__ import print_function
-import pandas as pd
-import datetime
 import pickle
-import datetime
 import os.path
 import sys
 import dba
+from sqlalchemy import create_engine
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from CalendarDataClass import CalendarData
-from sqlalchemy import create_engine
-from sqlalchemy.engine import ResultProxy
-from sqlalchemy.exc import OperationalError
-from schema import fct_calendar_data
 from CalendarOps import CalendarOps
 from convert_xls_data_to_csv import csv_from_excel
 from config import config
