@@ -1,11 +1,8 @@
 from pandas import DataFrame
 from sqlalchemy.engine import Connection, ResultProxy
 from loguru import logger
+from config import config
 import os.path
-import configparser
-
-config = configparser.ConfigParser()
-config.read('./config.ini')
 
 def get_file(_f):
     return os.path.join(config['DB']['SQL_DIR'], _f) 

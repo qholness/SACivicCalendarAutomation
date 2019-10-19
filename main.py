@@ -15,10 +15,7 @@ from sqlalchemy.exc import OperationalError
 from schema import fct_calendar_data
 from CalendarOps import CalendarOps
 from convert_xls_data_to_csv import csv_from_excel
-import configparser
-
-config = configparser.ConfigParser()
-config.read('./config.ini')
+from config import config
 
 global CALENDARDATAPATH, TARGETCALENDARID, DF, CONN
 engine_path = config['DB']['CON_STRING']
