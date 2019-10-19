@@ -1,0 +1,1 @@
+DELETE FROM stg_calendar_data
