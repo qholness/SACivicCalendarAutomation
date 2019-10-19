@@ -11,8 +11,7 @@ from convert_xls_data_to_csv import csv_from_excel
 from config import config
 
 global CALENDARDATAPATH, TARGETCALENDARID, DF, CONN
-engine_path = config['DB']['CON_STRING']
-CONN = create_engine(engine_path).connect()
+CONN = create_engine(config['DB']['CON_STRING']).connect()
 TARGETCALENDARID = config['CALENDAR']['TARGET']
 SCOPES = [
     # 'https://www.googleapis.com/auth/calendar.readonly',
