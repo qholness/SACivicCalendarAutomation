@@ -49,44 +49,7 @@ class CalendarData:
             read_csv(source_path, parse_dates=['Meeting Date', 'Meeting Time']))
         self.data['calendarId'] = None
 
-
-    def convert_to_military_time(hour_part:int):
-        return (int(hour_part) + 12) % 24
-
-
-    def convert_date(datestr: str, pattern: str='%Y-%M-%d') -> str:
-        return datetime.strptime(datestr, pattern).date()
-
     def generate_end_time(timestr: str):
         timestr = timestr.split(':')
         endtime = f"{ (int(timestr[0]) + 1) % 24}:00"
         return ":".join(timestr)
-
-    def generate_event_json(row,
-        name_key: str=fct_calendar_data.name,
-        time_key: str=fct_calendar_data.time,
-        date_key: str=fct_calendar_data.date,
-        loc_key: str=fct_calendar_data.location,
-        time_zone: str='America/Chicago',
-        calendarId: str=fct_calendar_data.id):
-        """perform event pre-processing and output a Google Calendar API-compliant JSON file"""
-        gen_datetime = lambda d, t: f"{ d }T{ t }"
-        start_time = row[time_key]
-        end_time = CalendarData.generate_end_time(row[time_key])
-        date = row[date_key]
-        return {
-            'calendarId': row[calendarId],
-            'summary': row[name_key],
-            'location': row[loc_key],
-            'start': {
-                'dateTime': gen_datetime(date, start_time),
-                'timeZone': time_zone
-            },
-            'end': {
-                'dateTime': gen_datetime(date, end_time),
-                'timeZone': time_zone
-            },
-            'reminders': {
-                'useDefault': True,
-            },
-        }
