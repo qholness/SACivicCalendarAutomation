@@ -1,12 +1,16 @@
-from sqlalchemy.engine import ResultProxy, Connection
+from sqlalchemy.engine import RowProxy, Connection
 from sqlalchemy.exc import OperationalError
 from CalendarData import CalendarData
 from googleapiclient.discovery import build
 from loguru import logger
 from schema import fct_calendar_data
 
-def check_nat_str(nat):
-    return nat == 'NaT'
+
+def check_nat_str(nat: str):
+    if not isinstance(nat, str):
+        return False
+    return 'nat' in nat.lower()
+
 
 class CalendarOps:
 
@@ -18,29 +22,36 @@ class CalendarOps:
         return build('calendar', 'v3', credentials=credentials)
     
 
-    def generate_event_json(row: ResultProxy,
-        name_key: str=fct_calendar_data.name,
-        time_key: str=fct_calendar_data.time,
-        date_key: str=fct_calendar_data.date,
-        loc_key: str=fct_calendar_data.location,
-        time_zone: str='America/Chicago',
-        calendarId: str=fct_calendar_data.id,
-        cfg=None):
+    def generate_event_json(
+            row: RowProxy
+            , name_key: str=fct_calendar_data.name
+            , time_key: str=fct_calendar_data.time
+            , date_key: str=fct_calendar_data.date
+            , loc_key: str=fct_calendar_data.location
+            , time_zone: str='America/Chicago'
+            , calendarId: str=fct_calendar_data.id
+            , cfg=None) -> dict:
         """perform event pre-processing and output a Google Calendar API-compliant JSON file"""
-        gen_datetime = lambda d, t: f"{ d }T{ t }"
-        is_nat = check_nat_str(row[time_key])
+        def gen_datetime(d, t) -> str:
+            return f"{ d }T{ t }"
+        
+        timestamp = row[time_key]
+        date = row[date_key]
+        desc = cfg['DEFAULT']['calendarLink'] if cfg else "San Antonio Civic Event"
+        is_nat = check_nat_str(timestamp)
+
         if is_nat:
             start_time = CalendarData.__default_time__
         else:
-            start_time = row[time_key]
-        
+            start_time = timestamp
+
         end_time = CalendarData.generate_end_time(start_time)
-        date = row[date_key]
+
         return {
             'calendarId': row[calendarId],
             'summary': row[name_key],
-            'description': cfg['DEFAULT']['calendarLink'] if cfg else "San Antonio Civic Event",
             'location': row[loc_key],
+            'description': desc,
             'start': {
                 'dateTime': gen_datetime(date, start_time),
                 'timeZone': time_zone
@@ -56,16 +67,15 @@ class CalendarOps:
 
 
     def delete_event(self, tgt_calendar: str, eventId: str):
-        (
-            self.calendar_service
-                .events()
-                .delete(
-                    calendarId=tgt_calendar,
-                    eventId=eventId)
-                .execute())
+        (self.calendar_service
+            .events()
+            .delete(
+                calendarId=tgt_calendar,
+                eventId=eventId)
+            .execute())
 
 
-    def update_calendarId(row: ResultProxy, calendarId: str, conn: Connection):
+    def update_calendarId(row: RowProxy, calendarId: str, conn: Connection):
         return conn.execute(f"""
             UPDATE fct_calendar_data
             SET calendarId='{ calendarId }'
@@ -74,7 +84,7 @@ class CalendarOps:
         """)
 
 
-    def create_event(self, tgt_calendar: str, row: ResultProxy, conn: Connection, cfg=None):
+    def create_event(self, tgt_calendar: str, row: RowProxy, conn: Connection, cfg=None):
         body = CalendarOps.generate_event_json(row, cfg=cfg)
         
         event_exists_on_g_calendar = row.calendarId is None
@@ -90,4 +100,5 @@ class CalendarOps:
             except OperationalError as sqlOpError:
                 logger.warning("Database update failed. Deleting event.", sqlOpError)
                 self.delete_event(tgt_calendar, event['id'])
+            return 0
         return 0

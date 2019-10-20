@@ -1,4 +1,4 @@
-from CalendarOps import CalendarOps
+from gcal.CalendarOps  import CalendarOps
 from sqlalchemy.engine import Connection
 from tqdm import tqdm
 from dba import delete_from_fct_by_calendarId

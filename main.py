@@ -4,7 +4,7 @@ import atexit
 import common
 import gcal
 from sqlalchemy import create_engine
-from CalendarOps import CalendarOps
+from gcal.CalendarOps  import CalendarOps
 from config import config_factory
 from security import get_gcal_credentials
 

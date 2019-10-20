@@ -11,6 +11,7 @@ class CalendarData:
     data: DataFrame
     __default_time__: datetime = default_time
     
+
     def __data_prep__(data):
         def rename_columns():
             data.rename(columns={
@@ -42,11 +43,13 @@ class CalendarData:
         data[stg_calendar_data.time] = data[stg_calendar_data.time].dt.strftime('%H:%M:%S')
         return data
 
+
     def __init__(self, source_path: str):
         self.source_path = source_path
         self.data = CalendarData.__data_prep__(
             read_csv(source_path, parse_dates=['Meeting Date', 'Meeting Time']))
         self.data['calendarId'] = None
+
 
     def generate_end_time(timestr: str):
         is_nat = timestr == 'NaT'
