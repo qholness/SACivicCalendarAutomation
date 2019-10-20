@@ -1,6 +1,6 @@
 from sqlalchemy.engine import RowProxy, Connection
 from sqlalchemy.exc import OperationalError
-from CalendarData import CalendarData
+from data.CalendarData import CalendarData
 from googleapiclient.discovery import build
 from loguru import logger
 from schema import fct_calendar_data

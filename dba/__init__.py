@@ -4,7 +4,7 @@ from sqlalchemy.engine import Connection, ResultProxy
 from sqlalchemy.orm import sessionmaker
 from loguru import logger
 from tqdm import tqdm
-from CalendarData import CalendarData
+from data.CalendarData import CalendarData
 from dba import to_csv
 
 
