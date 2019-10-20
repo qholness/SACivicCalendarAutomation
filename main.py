@@ -26,7 +26,7 @@ def main(config, clear):
 
     # Calendar and DB Ops
     ops = CalendarOps(credentials=get_gcal_credentials(CONFIG))
-    common.create_new_events(TARGETCALENDARID, dba.fetch_from_fct_where_calendarId_is_null(CONN), ops, CONN)
+    common.create_new_events(TARGETCALENDARID, dba.fetch_from_fct_where_calendarId_is_null(CONN), ops, CONN, cfg=CONFIG)
     common.remove_old_events(TARGETCALENDARID, dba.fetch_past_events_from_fct(CONN), ops, CONN)
 
     if clear:

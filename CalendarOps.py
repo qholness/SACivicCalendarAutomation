@@ -24,7 +24,8 @@ class CalendarOps:
         date_key: str=fct_calendar_data.date,
         loc_key: str=fct_calendar_data.location,
         time_zone: str='America/Chicago',
-        calendarId: str=fct_calendar_data.id):
+        calendarId: str=fct_calendar_data.id,
+        cfg=None):
         """perform event pre-processing and output a Google Calendar API-compliant JSON file"""
         gen_datetime = lambda d, t: f"{ d }T{ t }"
         is_nat = check_nat_str(row[time_key])
@@ -38,6 +39,7 @@ class CalendarOps:
         return {
             'calendarId': row[calendarId],
             'summary': row[name_key],
+            'description': cfg['DEFAULT']['calendarLink'] if cfg else "San Antonio Civic Event",
             'location': row[loc_key],
             'start': {
                 'dateTime': gen_datetime(date, start_time),
@@ -72,8 +74,8 @@ class CalendarOps:
         """)
 
 
-    def create_event(self, tgt_calendar: str, row: ResultProxy, conn: Connection):
-        body = CalendarOps.generate_event_json(row)
+    def create_event(self, tgt_calendar: str, row: ResultProxy, conn: Connection, cfg=None):
+        body = CalendarOps.generate_event_json(row, cfg=cfg)
         
         event_exists_on_g_calendar = row.calendarId is None
         

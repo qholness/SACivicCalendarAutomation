@@ -4,9 +4,9 @@ from tqdm import tqdm
 from dba import delete_old_events
 
 
-def create_new_events(tgt: str, events: ResultProxy, ops: CalendarOps, con: Connection):
+def create_new_events(tgt: str, events: ResultProxy, ops: CalendarOps, con: Connection, cfg=None):
     for event in tqdm(events, desc="Adding events to calendar"):
-        ops.create_event(tgt, event, con)
+        ops.create_event(tgt, event, con, cfg=cfg)
 
 
 def remove_old_events(tgt: str, events: ResultProxy, ops: CalendarOps, con: Connection):
