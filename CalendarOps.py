@@ -1,11 +1,12 @@
 from sqlalchemy.engine import ResultProxy, Connection
 from sqlalchemy.exc import OperationalError
-from CalendarDataClass import CalendarData
+from CalendarData import CalendarData
 from googleapiclient.discovery import build
-from dba import update_calendarId
 from loguru import logger
 from schema import fct_calendar_data
 
+def check_nat_str(nat):
+    return nat == 'NaT'
 
 class CalendarOps:
 
@@ -26,8 +27,13 @@ class CalendarOps:
         calendarId: str=fct_calendar_data.id):
         """perform event pre-processing and output a Google Calendar API-compliant JSON file"""
         gen_datetime = lambda d, t: f"{ d }T{ t }"
-        start_time = row[time_key]
-        end_time = CalendarData.generate_end_time(row[time_key])
+        is_nat = check_nat_str(row[time_key])
+        if is_nat:
+            start_time = CalendarData.__default_time__
+        else:
+            start_time = row[time_key]
+        
+        end_time = CalendarData.generate_end_time(start_time)
         date = row[date_key]
         return {
             'calendarId': row[calendarId],
@@ -55,7 +61,15 @@ class CalendarOps:
                     calendarId=tgt_calendar,
                     eventId=eventId)
                 .execute())
-        logger.info(f"DELTED EVENT: { eventId }.")
+
+
+    def update_calendarId(row: ResultProxy, calendarId: str, conn: Connection):
+        return conn.execute(f"""
+            UPDATE fct_calendar_data
+            SET calendarId='{ calendarId }'
+            WHERE uniqueId='{ row.uniqueId }'
+                AND calendarId is null
+        """)
 
 
     def create_event(self, tgt_calendar: str, row: ResultProxy, conn: Connection):
@@ -64,18 +78,14 @@ class CalendarOps:
         event_exists_on_g_calendar = row.calendarId is None
         
         if event_exists_on_g_calendar is True:
-            logger.info("Event not found, creating a new one.")
             event = (
                 self.calendar_service
                     .events()
                     .insert(calendarId=tgt_calendar, body=body)
                     .execute())
-            logger.info(f"New event created: { event['id'] }")
             try:
-                update_calendarId(row, event['id'], conn)
+                CalendarOps.update_calendarId(row, event['id'], conn)
             except OperationalError as sqlOpError:
                 logger.warning("Database update failed. Deleting event.", sqlOpError)
                 self.delete_event(tgt_calendar, event['id'])
-            return 0
-        print(f"Event { row['calendarId'] } already exists")
         return 0

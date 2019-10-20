@@ -1,6 +1,7 @@
 from pandas import DataFrame, read_csv
 from datetime import datetime
 from schema import stg_calendar_data
+from numpy import datetime64
 
 
 default_time = datetime.strptime("00:00", '%H:%M').time()
@@ -48,6 +49,10 @@ class CalendarData:
         self.data['calendarId'] = None
 
     def generate_end_time(timestr: str):
+        is_nat = timestr == 'NaT'
+        not_string = not isinstance(timestr, str)
+        if not_string or is_nat:
+            return CalendarData.__default_time__
         timestr = timestr.split(':')
-        endtime = f"{ (int(timestr[0]) + 1) % 24}:00"
+        timestr[0] = f"{ (int(timestr[0]) + 1) % 24}"
         return ":".join(timestr)

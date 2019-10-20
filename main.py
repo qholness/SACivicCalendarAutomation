@@ -1,87 +1,41 @@
-import pickle
-import os.path
-import sys
 import dba
+import click
+import atexit
+import common
+import gcal
 from sqlalchemy import create_engine
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from CalendarDataClass import CalendarData
 from CalendarOps import CalendarOps
-from convert_xls_data_to_csv import csv_from_excel
-from config import config
-
-global CALENDARDATAPATH, TARGETCALENDARID, DF, CONN
-CONN = create_engine(config['DB']['CON_STRING']).connect()
-TARGETCALENDARID = config['CALENDAR']['TARGET']
-SCOPES = [
-    # 'https://www.googleapis.com/auth/calendar.readonly',
-    'https://www.googleapis.com/auth/calendar' # Read/Write permissions
-]
-
-def convert_data():
-    csv_from_excel(
-        config['INPUTDATA']['SOURCEXLS'],
-        config['INPUTDATA']['SOURCECSV'])
+from config import config_factory
+from security import get_gcal_credentials
 
 
-def data_intake():
-    DF = CalendarData(source_path=config['INPUTDATA']['PATH'])
-    dba.truncate_stg(CONN)
-    dba.update_staging_table(DF.data, CONN)
-    dba.migrate_stg_to_fct(CONN)
-
-
-def cleanup_calendar(ops: CalendarOps):
-    """Delete entries from calendar"""
-    global CONN, TARGETCALENDARID
-    for event in CONN.execute("SELECT * FROM fct_calendar_data").fetchall():
-        try:
-            ops.delete_event(TARGETCALENDARID, event['calendarId'])
-        except:
-            pass
-        dba.delete_from_fct_by_calendarId(event['calendarId'], CONN)
-
-
-def get_gcal_credentials():
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.pickle'):
-        with open('../token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                '../credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    return creds
-
-
-def main():
+@click.command()
+@click.option('--config', default='config.ini', help="Path to config file.")
+@click.option('--clear', is_flag=True, default=False, help='Clear the calendar')
+def main(config, clear):
     """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
-    """
-    global TARGETCALENDARID, CONN
-    convert_data()
-    data_intake()
-    new_events = dba.fetch_from_fct_where_calId_is_null(CONN)
-    ops = CalendarOps(credentials=get_gcal_credentials())
-    old_events = dba.fetch_past_events_from_fct(CONN)
+    Prints the start and name of the next 10 events on the user's calendar."""
+    CONFIG = config_factory(config)
+    CONN = create_engine(CONFIG['DB']['CON_STRING']).connect()
+    TARGETCALENDARID = CONFIG['CALENDAR']['TARGET']
+    
+    # DBA Operations
+    dba.build_schema(CONN, drop_all=clear)
+    dba.convert_data(CONFIG)
+    dba.data_intake(CONFIG, CONN)
 
-    for event in new_events:
-        ops.create_event(TARGETCALENDARID, event, CONN)
+    # Calendar and DB Ops
+    ops = CalendarOps(credentials=get_gcal_credentials(CONFIG))
+    common.create_new_events(TARGETCALENDARID, dba.fetch_from_fct_where_calendarId_is_null(CONN), ops, CONN)
+    common.remove_old_events(TARGETCALENDARID, dba.fetch_past_events_from_fct(CONN), ops, CONN)
+
+    if clear:
+        gcal.cleanup_calendar(ops, TARGETCALENDARID, CONN)
     
-    for event in old_events:
-        ops.delete_event(TARGETCALENDARID, event.calendarId)
-    
-    dba.delete_old_events(CONN)
+    if CONFIG['DEFAULT']['ENV'] in ('DEV', 'TEST'):
+        @atexit.register
+        def dev_teardown():
+            gcal.cleanup_calendar(ops, TARGETCALENDARID, CONN)
 
 
 if __name__ == '__main__':

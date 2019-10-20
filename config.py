@@ -1,4 +1,7 @@
 import configparser
 
-config = configparser.ConfigParser()
-config.read('./config.ini')
+
+def config_factory(config_path: str='./config.ini'):
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    return config

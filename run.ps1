@@ -1,2 +1,2 @@
 cd ~/Projects/civicCalendar
-python main.py
+python main.py --config ../configs/prodCivCalendar.ini
