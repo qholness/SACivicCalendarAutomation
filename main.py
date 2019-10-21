@@ -13,8 +13,6 @@ from security import get_gcal_credentials
 @click.option('--config', default='config.ini', help="Path to config file.")
 @click.option('--clear', is_flag=True, default=False, help='Clear the calendar')
 def main(config, clear):
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar."""
     CONFIG = config_factory(config)
     CONN = create_engine(CONFIG['DB']['CON_STRING']).connect()
     TARGETCALENDARID = CONFIG['CALENDAR']['TARGET']
