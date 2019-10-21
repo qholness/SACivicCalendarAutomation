@@ -1,12 +1,12 @@
 import dba
 import click
-import atexit
 import common
 import gcal
 from sqlalchemy import create_engine
-from gcal.CalendarOps  import CalendarOps
+from gcal.CalendarOps import CalendarOps
 from config import config_factory
 from security import get_gcal_credentials
+from teardown import teardown
 
 
 @click.command()
@@ -30,10 +30,7 @@ def main(config, clear):
     if clear:
         gcal.cleanup_calendar(ops, TARGETCALENDARID, CONN)
     
-    if CONFIG['DEFAULT']['ENV'] in ('DEV', 'TEST'):
-        @atexit.register
-        def dev_teardown():
-            gcal.cleanup_calendar(ops, TARGETCALENDARID, CONN)
+    teardown(CONFIG, ops, TARGETCALENDARID, CONN)
 
 
 if __name__ == '__main__':
